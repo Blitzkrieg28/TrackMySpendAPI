@@ -32,6 +32,8 @@ app.get('/', (req, res) => {
   res.send('TrackMySpend API is running');
 });
 
+const swaggerDocs = require('./swagger');
+swaggerDocs(app);
 
 // Start the server
 app.listen(PORT, () => {

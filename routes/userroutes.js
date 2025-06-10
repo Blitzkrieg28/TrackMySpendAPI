@@ -41,6 +41,34 @@ router.post("/signin" ,authmiddleware,async function(req,res){
 
 
 })
+/**
+ * @swagger
+ * /user/signup:
+ *   post:
+ *     summary: Register a new user
+ *     tags: [User]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - username
+ *               - password
+ *             properties:
+ *               username:
+ *                 type: string
+ *                 example: john_doe
+ *               password:
+ *                 type: string
+ *                 example: secret123
+ *     responses:
+ *       200:
+ *         description: Sign-up successful
+ *       404:
+ *         description: User already exists
+ */
 
 router.post("/signup",authmiddleware, async function(req,res){
     const username= req.body.username;
