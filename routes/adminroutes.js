@@ -8,6 +8,33 @@ const User= require('../database/users');
 const Admin= require('../database/admin');
 const mongoose= require('../database/database');
 
+/**
+ * @swagger
+ * /admin/signin:
+ *   post:
+ *     summary: Admin login
+ *     tags: [Admin]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - username
+ *               - password
+ *             properties:
+ *               username:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Admin login successful
+ *       403:
+ *         description: Admin not found
+ */
+
 router.post("/signin" ,authmiddleware,async function(req,res){
     console.log("now,checking if admin exists??");
     const username= req.body.username;

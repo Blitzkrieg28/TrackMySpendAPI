@@ -2,6 +2,35 @@ const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 
+/**
+ * @swagger
+ * /report/viewreport:
+ *   get:
+ *     summary: View consolidated budget report
+ *     tags: [Report]
+ *     parameters:
+ *       - in: query
+ *         name: day
+ *         required: true
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: month
+ *         required: true
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: year
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Combined budget data
+ *       500:
+ *         description: Error fetching report
+ */
+
 // View Report Route
 router.get("/viewreport", async function (req, res) {
     const {day,month,year} =req.query;

@@ -26,6 +26,32 @@ router.get("/viewexpense" ,validationMiddleware,async function(req,res){
     console.log(expenselist);
 })
 
+/**
+ * @swagger
+ * /expense/addexpense:
+ *   post:
+ *     summary: Add an expense
+ *     tags: [Expense]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               amount:
+ *                 type: number
+ *               category:
+ *                 type: string
+ *               date:
+ *                 type: string
+ *               count:
+ *                 type: number
+ *     responses:
+ *       200:
+ *         description: Expense added or updated
+ */
+
 router.post("/addexpense" ,validationMiddleware,async function(req,res){
     let {amount,category,date,count} =req.body;
     const existingExpense= await Expense.findOne({

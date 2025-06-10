@@ -27,6 +27,32 @@ router.get("/viewincome" ,validationMiddleware,async function(req,res){
     console.log(incomelist);
 })
 
+/**
+ * @swagger
+ * /income/addincome:
+ *   post:
+ *     summary: Add income record
+ *     tags: [Income]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               amount:
+ *                 type: number
+ *               category:
+ *                 type: string
+ *               date:
+ *                 type: string
+ *               count:
+ *                 type: number
+ *     responses:
+ *       200:
+ *         description: Income added or updated
+ */
+
 router.post("/addincome" ,validationMiddleware,async function(req,res){
     let {amount,category,date,count} =req.body;
     const existingIncome= await Income.findOne({

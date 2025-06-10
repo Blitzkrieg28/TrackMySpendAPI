@@ -9,6 +9,32 @@ const tokenVerificationMiddleware= require('../middlewares/tokenauth');
 const User= require('../database/users');
 const mongoose= require('../database/database');
 
+/**
+ * @swagger
+ * /user/signin:
+ *   post:
+ *     summary: Sign in as a user
+ *     tags: [User]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - username
+ *               - password
+ *             properties:
+ *               username:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Login successful with token
+ *       403:
+ *         description: Invalid credentials
+ */
 
 router.post("/signin" ,authmiddleware,async function(req,res){
     console.log("now,checking if user exists??");

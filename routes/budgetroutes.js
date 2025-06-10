@@ -64,6 +64,16 @@ function budgetcalculator(income,expense){
         // }
         
         // })
+/**
+ * @swagger
+ * /budget/totalbudget:
+ *   get:
+ *     summary: Get total budget analysis
+ *     tags: [Budget]
+ *     responses:
+ *       200:
+ *         description: Budget evaluation response
+ */
 
 router.get("/totalbudget",function(req,res){
    const message= budgetcalculator(totalIncome,totalExpense);
