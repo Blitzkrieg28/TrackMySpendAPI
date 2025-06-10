@@ -28,6 +28,9 @@ app.use('/income', incomeRouter);
 app.use('/category', categoryRouter);
 app.use('/budget', budgetRouter);
 app.use('/report', reportRouter);
+app.get('/', (req, res) => {
+  res.send('TrackMySpend API is running');
+});
 
 
 // Start the server
