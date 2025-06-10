@@ -1,0 +1,24 @@
+{
+  "name": "trackmyspend-api",
+  "version": "1.0.0",
+  "description": "TrackMySpend API - A simple RESTful API for managing personal expenses.",
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "expense",
+    "api",
+    "nodejs",
+    "mongodb",
+    "express"
+  ],
+  "author": "Tanmay Mathurvaishya",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "mongoose": "^8.15.1"
+  }
+}
