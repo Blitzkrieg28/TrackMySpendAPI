@@ -4,9 +4,18 @@ const schemaId = zod.string().nonempty();
 const schemaAmount = zod.number().min(1);
 const schemaCategory = zod.string().nonempty();
 const schemaDate = zod.string().refine((val) => !isNaN(Date.parse(val)));
+const schemaFrom= zod.string().nonempty();
+const schemaTime = zod
+  .string()
+  .nonempty("Time is required")
+  .refine(
+    (val) => /^([01]\d|2[0-3]):([0-5]\d)$/.test(val),
+    "Invalid time format (expected HH:mm)"
+  );
+
 
 const validationMiddleware = (req, res, next) => {
-    const { id, amount, category, date } = req.body;
+    const { id, amount, category, date,time,from } = req.body;
 
     const errors = [];
 
@@ -27,6 +36,16 @@ const validationMiddleware = (req, res, next) => {
 
     if (date !== undefined) {
         const result = schemaDate.safeParse(date);
+        if (!result.success) errors.push(result.error.errors[0].message);
+    }
+
+    if (time !== undefined) {
+        const result = schemaTime.safeParse(time);
+        if (!result.success) errors.push(result.error.errors[0].message);
+    }
+
+    if (from !== undefined) {
+        const result = schemaFrom.safeParse(from);
         if (!result.success) errors.push(result.error.errors[0].message);
     }
 

@@ -54,11 +54,13 @@ router.get("/viewincome" ,validationMiddleware,async function(req,res){
  */
 
 router.post("/addincome" ,validationMiddleware,async function(req,res){
-    let {amount,category,date,count} =req.body;
+    let {amount,category,date,count,time,from} =req.body;
     const existingIncome= await Income.findOne({
         amount:amount,
         category:category,
-        date:date
+        date:date,
+         time:time,
+         from:from
     });
     if(existingIncome){
         await Income.updateOne(
@@ -66,6 +68,8 @@ router.post("/addincome" ,validationMiddleware,async function(req,res){
               amount: amount,
               category: category,
               date: date,
+              time: time,
+              from: from
             },
             {
               $inc: { count: count }, // Increment the count by the provided value
@@ -84,7 +88,9 @@ router.post("/addincome" ,validationMiddleware,async function(req,res){
         amount:amount,
         category:category,
         date:date,
-        count: count
+        count: count,
+        time: time,
+        from: from
     })
     
       
@@ -97,12 +103,15 @@ router.post("/addincome" ,validationMiddleware,async function(req,res){
 })
 
  router.put("/updateincome",validationMiddleware,async function(req,res){
-    const {id,amount,category,date,count} =req.body;
+    const {id,amount,category,date,count,time,from} =req.body;
     const updateFields = {};
   if (amount !== undefined) updateFields.amount = amount;
   if (category !== undefined) updateFields.category = category;
   if (date !== undefined) updateFields.date = date;
   if (count !== undefined) updateFields.count = count;
+  if (time !== undefined) updateFields.time = time;
+  if (from !== undefined) updateFields.from = from;
+
 
     const existingId=await Income.findById(id);
     if(!existingId){
