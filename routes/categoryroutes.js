@@ -117,6 +117,22 @@ global.incomeCategory= "";
  *                 totalincomecategory:
  *                   type: number
  */
+router.get("/filter", async (req, res) => {
+  const { month, year, day } = req.query;
+
+  const incomes = await Income.find();
+  const filtered = incomes.filter((inc) => {
+    const [incYear, incMonth, incDay] = inc.date.split("-"); // assumes YYYY-MM-DD
+
+    return (
+      (!month || incMonth === month) &&
+      (!year || incYear === year) &&
+      (!day || incDay === day)
+    );
+  });
+
+  res.send({ filtered });
+});
 
 router.get("/viewexpensecategory" , async function(req,res){
   
