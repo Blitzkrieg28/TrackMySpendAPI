@@ -1,4 +1,6 @@
 const express = require('express');
+const cors = require('cors');
+
 const dotenv = require('dotenv');
 const connectToDatabase = require('./database/database'); // ✅ Import DB connection
 
@@ -19,6 +21,7 @@ const PORT = process.env.PORT || 8000;
 connectToDatabase();
 
 app.use(express.json());
+app.use(cors({ origin: 'http://localhost:5173' }));
 
 // Routes
 app.use('/admin', adminRouter);
