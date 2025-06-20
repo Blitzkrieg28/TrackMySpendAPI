@@ -17,7 +17,7 @@ global.totaldailyIncome= 0;
 global.incomeDay =0;
 //router.use(tokenVerificationMiddleware);
 
-router.get("/viewincome" ,validationMiddleware,async function(req,res){
+router.get("/viewincome" ,async function(req,res){
     const incomelist= await Income.find();
     res.send({
         message: "here view your income list",

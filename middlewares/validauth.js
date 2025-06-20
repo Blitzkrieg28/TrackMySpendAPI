@@ -5,10 +5,7 @@ const schemaAmount = zod.number().min(1);
 const schemaCategory = zod.string().nonempty();
 const schemaDate = zod.string().refine((val) => !isNaN(Date.parse(val)));
 const schemaFrom= zod.string().nonempty();
-const schemaTime = zod
-  .string()
-  .nonempty("Time is required")
-  .refine(
+const schemaTime = zod.string() .nonempty("Time is required").refine(
     (val) => /^([01]\d|2[0-3]):([0-5]\d)$/.test(val),
     "Invalid time format (expected HH:mm)"
   );
