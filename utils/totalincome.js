@@ -1,17 +1,56 @@
 // utils/calculateTotalIncome.js
 const Income = require("../database/income");
 
-async function calculateTotalIncome() {
-  // Fetch all income documents
-  const incomes = await Income.find();
+/**
+ * Calculate total income, optionally filtered by year/month/day/category.
+ *
+ * @param {Object} filters
+ * @param {string} [filters.year]     Four‑digit year, e.g. "2025"
+ * @param {string} [filters.month]    Two‑digit month, e.g. "06"
+ * @param {string} [filters.day]      Two‑digit day, e.g. "15"
+ * @param {string} [filters.category] Partial or full category name, case‑insensitive
+ * @returns {Promise<number>} total
+ */
+async function calculateTotalIncome(filters = {}) {
+  const { year, month, day, category } = filters;
 
-  // Sum them in a local variable
-  let total = 0;
-  for (const inc of incomes) {
-    total += (inc.amount || 0) * (inc.count || 1);
+  // Build your Mongo query
+  const query = {};
+
+  // Category filter
+  if (category) {
+    query.category = { $regex: category, $options: "i" };
   }
 
-  return total;
+  // Date filters—since you store date as "YYYY-MM-DD" (string), we can match via regex:
+  if (year) {
+    // anchor at start: "2025-"
+    query.date = { $regex: `^${year}-` };
+  }
+  if (month) {
+    const mm = month.padStart(2, "0");
+    // either extend existing regex or set new
+    query.date = {
+      ...query.date,
+      $regex: `^${year || "\\d{4}"}-${mm}-`,
+    };
+  }
+  if (day) {
+    const dd = day.padStart(2, "0");
+    query.date = {
+      ...query.date,
+      $regex: `^${year || "\\d{4}"}-${month ? month.padStart(2, "0") : "\\d{2}"}-${dd}$`,
+    };
+  }
+
+  // Fetch just the matching docs
+  const incomes = await Income.find(query);
+
+  // Sum them
+  return incomes.reduce(
+    (sum, inc) => sum + (inc.amount || 0) * (inc.count || 1),
+    0
+  );
 }
 
 module.exports = calculateTotalIncome;

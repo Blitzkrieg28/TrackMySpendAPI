@@ -165,14 +165,22 @@ router.post("/addincome" ,validationMiddleware,async function(req,res){
  })
 
   router.get("/totalincome" , async function(req,res){
-     try {
-    const totalIncome = await calculateTotalIncome();
-    res.send({ totalIncome });
-        console.log(totalIncome);
+    try {
+    // Pass along any of year, month, day, category that the client provided
+    const filters = {
+      year:     req.query.year,
+      month:    req.query.month,
+      day:      req.query.day,
+      category: req.query.category,
+    };
 
+    const totalIncome = await calculateTotalIncome(filters);
+
+    console.log("Computed totalIncome with filters", filters, "→", totalIncome);
+    return res.json({ totalIncome });
   } catch (err) {
     console.error("Error computing total income:", err);
-    res.status(500).send({ message: "Server error" });
+    return res.status(500).json({ message: "Server error" });
   }
     //method:2-->
     // const result= await Income.aggregate([     //aggregate is a pipleine that helps to perform operation in the database itself
