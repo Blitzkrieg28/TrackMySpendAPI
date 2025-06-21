@@ -8,6 +8,10 @@ const User= require('../database/users');
 const Expense= require('../database/expenses');
 const Income= require('../database/income');
 const validationMiddleware= require('../middlewares/validauth');
+const calculateTotalIncome = require('../utils/totalincome');
+const calculateMonthlyTotalIncome = require('../utils/totalmonthlyincome');
+const calculateYearlyTotalIncome = require('../utils/totalyearlyincome');
+const calculateDailyTotalIncome = require('../utils/totaldailyincome');
 global.totalIncome= 0;
 global.totalmonthlyIncome =0;
 global.incomeMonth= 0;
@@ -161,16 +165,15 @@ router.post("/addincome" ,validationMiddleware,async function(req,res){
  })
 
   router.get("/totalincome" , async function(req,res){
-    //method:1--> Expense.find() is used which fetches whole expense docs data in the server
-    const incomes= await Income.find();
+     try {
+    const totalIncome = await calculateTotalIncome();
+    res.send({ totalIncome });
+        console.log(totalIncome);
 
-    incomes.forEach(function(income){
-      totalIncome= totalIncome+((income.amount)*(income.count))
-    })
-
-    res.send({
-      totalIncome
-    })
+  } catch (err) {
+    console.error("Error computing total income:", err);
+    res.status(500).send({ message: "Server error" });
+  }
     //method:2-->
     // const result= await Income.aggregate([     //aggregate is a pipleine that helps to perform operation in the database itself
     //     {
@@ -190,91 +193,39 @@ router.post("/addincome" ,validationMiddleware,async function(req,res){
   })
 
   router.get("/monthlytotalincome" ,async function(req,res){
-  
-    const {month,year}= req.query; 
-    const parsedmonth= parseInt(month);
-    const parsedyear= parseInt(year);
-
-    const incomes= await Income.find();// fetching all data from database
-
-    incomes.forEach(function(income){
-        const incomeDate = new Date(income.date);
-
-        if (
-          incomeDate.getMonth() + 1 === parsedmonth && // Match month (0-based index)
-          incomeDate.getFullYear() === parsedyear // Match year
-        ) {
-        incomeMonth=incomeDate.getMonth() + 1;
-        incomeYear=incomeDate.getFullYear();
-          totalmonthlyIncome += (income.amount*income.count);
-        }
-    })
+   try {
+    const { month, year } = req.query;
+    const total = await calculateMonthlyTotalIncome(month, year);
+    res.json({totalMonthlyIncome: total });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
     
 
-    res.send({
-        totalmonthlyIncome
-    })
-     console.log(incomeMonth);
-     console.log(incomeYear);
+    
   })
 
   router.get("/yearlytotalincome" ,async function(req,res){
-   
-    const {year}= req.query; 
-    const parsedyear= parseInt(year);
-
-    const incomes= await Income.find();// fetching all data from database
-
-    incomes.forEach(function(income){
-        const incomeDate = new Date(income.date);
-
-        if (
-          incomeDate.getFullYear() === parsedyear // Match year
-        ) {
-        incomeYear=incomeDate.getFullYear();
-          totalyearlyIncome += (income.amount*income.count);
-        }
-    })
+    try {
+    const { year } = req.query;
+    const total = await calculateYearlyTotalIncome(year);
+    res.json({totalYearlyIncome: total });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
     
 
-    res.send({
-        totalyearlyIncome
-    })
-     console.log(incomeMonth);
-     console.log(incomeYear);
   })
 
   router.get("/dailytotalincome" ,async function(req,res){
-  
-    const {day,month,year}= req.query; 
-    const parsedday= parseInt(day);
-    const parsedmonth= parseInt(month);
-    const parsedyear= parseInt(year);
-
-    const incomes= await Income.find();// fetching all data from database
-
-    incomes.forEach(function(income){
-        const incomeDate = new Date(income.date);
-
-        if (
-          incomeDate.getDate() === parsedday &&  
-          incomeDate.getMonth() + 1 === parsedmonth && // Match month (0-based index)
-          incomeDate.getFullYear() === parsedyear // Match year
-        ) {
-        incomeDay= incomeDate.getDate();    
-        incomeMonth=incomeDate.getMonth() + 1;
-        incomeYear=incomeDate.getFullYear();
-          totaldailyIncome += (income.amount*income.count);
-        }
-    })
+   try {
+    const { day,month,year } = req.query;
+    const total = await calculateDailyTotalIncome(day,month,year);
+    res.json({totalDailyIncome: total });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
     
-
-    res.send({
-        totaldailyIncome
-    })
-     console.log(incomeDay);
-     console.log(incomeMonth);
-     console.log(incomeYear);
   })
  
 
