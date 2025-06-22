@@ -225,46 +225,34 @@ router.get("/monthlytotalincome", async (req, res) => {
 
 
     
-  
   router.get('/eachmonthincome', async (req, res) => {
   try {
-    // 1️⃣ Compute “today” in IST
+    // 🕒 Get IST date
     const now       = new Date();
     const utcMillis = now.getTime() + now.getTimezoneOffset() * 60000;
-    const istOffset = 5.5 * 60 * 60000;    // 5.5 hours in ms
+    const istOffset = 5.5 * 60 * 60000;
     const istDate   = new Date(utcMillis + istOffset);
 
-    // 2️⃣ Parse year, default to IST’s current year
+    // 📅 Determine target year
     const year = parseInt(req.query.year, 10) || istDate.getFullYear();
 
-    // 3️⃣ Aggregate per month for that year
-    const agg = await Income.aggregate([
-      // ensure date field is a BSON Date
-      { $addFields: { dateObj: { $toDate: '$date' } } },
-      // match this year
-      {
-        $match: {
-          $expr: { $eq: [ { $year: '$dateObj' }, year ] }
-        }
-      },
-      // group by month
-      {
-        $group: {
-          _id: { month: { $month: '$dateObj' } },
-          total: { $sum: '$amount' }
-        }
-      },
-      // sort ascending by month
-      { $sort: { '_id.month': 1 } }
-    ]);
+    // 📦 Fetch all income records
+    const incomes = await Income.find();
 
-    // 4️⃣ Zero-fill 12 months
+    // 📊 Initialize monthly totals (Jan–Dec)
     const monthlyTotals = Array(12).fill(0);
-    agg.forEach(({ _id: { month }, total }) => {
-      monthlyTotals[month - 1] = total;
-    });
 
-    // 5️⃣ Labels
+    // 🧮 Sum incomes by month (accounting for count)
+    for (const income of incomes) {
+      const dateObj = new Date(income.date);
+      if (dateObj.getFullYear() === year) {
+        const monthIndex = dateObj.getMonth(); // 0-based index
+        const incomeTotal = (income.amount || 0) * (income.count || 1);
+        monthlyTotals[monthIndex] += incomeTotal;
+      }
+    }
+
+    // 🏷 Month labels
     const months = [
       'Jan','Feb','Mar','Apr','May','Jun',
       'Jul','Aug','Sep','Oct','Nov','Dec'
@@ -277,65 +265,43 @@ router.get("/monthlytotalincome", async (req, res) => {
     return res.status(500).json({ error: 'Server error' });
   }
 });
-
 router.get('/eachweekincome', async (req, res) => {
   try {
-    // 1️⃣ Compute “today” in IST
+    // 1️⃣ Get current IST date
     const now       = new Date();
     const utcMillis = now.getTime() + now.getTimezoneOffset() * 60000;
-    const istOffset = 5.5 * 60 * 60000;    // 5.5 hours in ms
+    const istOffset = 5.5 * 60 * 60000;
     const istDate   = new Date(utcMillis + istOffset);
 
-    // 2️⃣ Parse inputs, defaulting to IST year/month
-    const year  = parseInt(req.query.year,  10) || istDate.getFullYear();
+    // 2️⃣ Parse year/month from query or default to IST values
+    const year  = parseInt(req.query.year, 10) || istDate.getFullYear();
     const month = parseInt(req.query.month, 10) || (istDate.getMonth() + 1);
 
-    // 3️⃣ Aggregate incomes by week-of-month
-    const agg = await Income.aggregate([
-      // ensure date is coerced to BSON Date
-      { $addFields: { dateObj: { $toDate: '$date' } } },
-      // match this year & month
-      {
-        $match: {
-          $expr: {
-            $and: [
-              { $eq: [{ $year: '$dateObj' }, year] },
-              { $eq: [{ $month: '$dateObj' }, month] }
-            ]
-          }
-        }
-      },
-      // compute weekInMonth = ceil(dayOfMonth / 7)
-      {
-        $addFields: {
-          weekInMonth: {
-            $ceil: {
-              $divide: [{ $dayOfMonth: '$dateObj' }, 7]
-            }
-          }
-        }
-      },
-      // group by that week number
-      {
-        $group: {
-          _id: '$weekInMonth',
-          total: { $sum: '$amount' }
-        }
-      },
-      // sort ascending by week
-      { $sort: { '_id': 1 } }
-    ]);
+    // 3️⃣ Fetch all incomes
+    const incomes = await Income.find();
 
-    // 4️⃣ Zero-fill weeks 1–5
+    // 4️⃣ Initialize weekly totals [W1–W5]
     const weeklyTotals = [0, 0, 0, 0, 0];
-    agg.forEach(({ _id: week, total }) => {
-      if (week >= 1 && week <= 5) {
-        weeklyTotals[week - 1] = total;
-      }
-    });
 
-    // 5️⃣ Labels
-    const weeks = ['W1','W2','W3','W4','W5'];
+    // 5️⃣ Calculate totals by week
+    for (const income of incomes) {
+      const dateObj = new Date(income.date);
+      const incomeYear  = dateObj.getFullYear();
+      const incomeMonth = dateObj.getMonth() + 1;
+
+      if (incomeYear === year && incomeMonth === month) {
+        const dayOfMonth = dateObj.getDate();
+        const weekInMonth = Math.ceil(dayOfMonth / 7); // Week 1 to 5
+        const amount = (income.amount || 0) * (income.count || 1);
+
+        if (weekInMonth >= 1 && weekInMonth <= 5) {
+          weeklyTotals[weekInMonth - 1] += amount;
+        }
+      }
+    }
+
+    // 6️⃣ Week labels
+    const weeks = ['W1', 'W2', 'W3', 'W4', 'W5'];
 
     return res.json({ weeks, totals: weeklyTotals });
   }
@@ -347,55 +313,46 @@ router.get('/eachweekincome', async (req, res) => {
 
 router.get('/eachdayincome', async (req, res) => {
   try {
-    // 1️⃣ Compute “today” in IST
+    // 🕒 Compute IST date
     const now       = new Date();
     const utcMillis = now.getTime() + now.getTimezoneOffset() * 60000;
-    const istOffset = 5.5 * 60 * 60000;  // 5.5 hours in ms
+    const istOffset = 5.5 * 60 * 60000;
     const istDate   = new Date(utcMillis + istOffset);
 
-    // 2️⃣ Derive year/month/day from IST
     const year  = parseInt(req.query.year,  10) || istDate.getFullYear();
     const month = parseInt(req.query.month, 10) || (istDate.getMonth() + 1);
-    // If client gave week, use it; else compute from IST day
     const week  = parseInt(req.query.week,  10)
                || Math.ceil(istDate.getDate() / 7);
 
-    // 3️⃣ Aggregate exactly as before
-    const agg = await Income.aggregate([
-      { $addFields: { dateObj: { $toDate: '$date' } } },
-      {
-        $match: {
-          $expr: {
-            $and: [
-              { $eq: [{ $year: '$dateObj' }, year]   },
-              { $eq: [{ $month: '$dateObj' }, month] }
-            ]
-          }
-        }
-      },
-      { $addFields: { weekInMonth: { $ceil: { $divide: [{ $dayOfMonth: '$dateObj' }, 7] } } } },
-      { $match: { weekInMonth: week } },
-      { $addFields: { isoWeekday: { $isoDayOfWeek: '$dateObj' } } },
-      {
-        $group: {
-          _id: '$isoWeekday',
-          total: { $sum: '$amount' }
-        }
-      },
-      { $sort: { '_id': 1 } }
-    ]);
+    // Step 1️⃣: Get all incomes for that year/month
+    const incomes = await Income.find({});
 
-    // 4️⃣ Zero‐fill and respond
-    const days        = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-    const dailyTotals = Array(7).fill(0);
-    agg.forEach(({ _id: dow, total }) => {
-      if (dow >= 1 && dow <= 7) dailyTotals[dow - 1] = total;
-    });
+    // Step 2️⃣: Filter and compute income totals per day in the week
+    const weeklyTotals = Array(7).fill(0); // Mon–Sun
 
-    return res.json({ days, totals: dailyTotals });
+    for (const income of incomes) {
+      const dateObj = new Date(income.date);
+      if (
+        dateObj.getFullYear() === year &&
+        (dateObj.getMonth() + 1) === month &&
+        Math.ceil(dateObj.getDate() / 7) === week
+      ) {
+        const isoWeekday = dateObj.getDay(); // 0 (Sun) to 6 (Sat)
+
+        // Convert to 1 (Mon) to 7 (Sun) format
+        const adjustedDay = isoWeekday === 0 ? 7 : isoWeekday;
+
+        // Call your utility to compute `amount × count`
+        const incomeTotal = (income.amount || 0) * (income.count || 1);
+        weeklyTotals[adjustedDay - 1] += incomeTotal;
+      }
+    }
+
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    return res.json({ days, totals: weeklyTotals });
   }
   catch (err) {
-    console.error('Error in eachdayincome:', err);
+    console.error('Error in /eachdayincome:', err);
     return res.status(500).json({ error: 'Server error' });
   }
 });
