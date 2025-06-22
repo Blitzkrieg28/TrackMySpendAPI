@@ -199,19 +199,33 @@ router.post("/addincome" ,validationMiddleware,async function(req,res){
    
 
   })
+router.get("/monthlytotalincome", async (req, res) => {
+  try {
+    // 1️⃣ Compute “today” in IST
+    const now       = new Date();
+    const utcMillis = now.getTime() + now.getTimezoneOffset() * 60000;
+    const istOffset = 5.5 * 60 * 60000;
+    const istDate   = new Date(utcMillis + istOffset);
 
-  router.get("/monthlytotalincome" ,async function(req,res){
-   try {
-    const { month, year } = req.query;
+    // 2️⃣ Use query params if available; else use IST date
+    const month = parseInt(req.query.month, 10) || (istDate.getMonth() + 1); // 1–12
+    const year  = parseInt(req.query.year,  10) || istDate.getFullYear();
+
+    // 3️⃣ Call util to calculate total
     const total = await calculateMonthlyTotalIncome(month, year);
-    res.json({totalMonthlyIncome: total });
-  } catch (err) {
-    res.status(400).json({ message: err.message });
+
+    // 4️⃣ Return response
+    return res.json({ totalMonthlyIncome: total });
+  } 
+  catch (err) {
+    console.error("Error computing monthly total income:", err);
+    return res.status(500).json({ message: "Server error" });
   }
-    
+});
+
 
     
-  })
+  
   router.get('/eachmonthincome', async (req, res) => {
   try {
     // 1️⃣ Compute “today” in IST
@@ -386,29 +400,63 @@ router.get('/eachdayincome', async (req, res) => {
   }
 });
 
+router.get("/yearlytotalincome", async (req, res) => {
+  try {
+    // 1️⃣ Compute “today” in IST
+    const now       = new Date();
+    const utcMillis = now.getTime() + now.getTimezoneOffset() * 60000;
+    const istOffset = 5.5 * 60 * 60000;
+    const istDate   = new Date(utcMillis + istOffset);
 
-  router.get("/yearlytotalincome" ,async function(req,res){
-    try {
-    const { year } = req.query;
+    // 2️⃣ Use query param if available; else fallback to IST year
+    const year = parseInt(req.query.year, 10) || istDate.getFullYear();
+
+    // 3️⃣ Call util to compute total
     const total = await calculateYearlyTotalIncome(year);
-    res.json({totalYearlyIncome: total });
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
-    
 
-  })
-
-  router.get("/dailytotalincome" ,async function(req,res){
-   try {
-    const { day,month,year } = req.query;
-    const total = await calculateDailyTotalIncome(day,month,year);
-    res.json({totalDailyIncome: total });
-  } catch (err) {
-    res.status(400).json({ message: err.message });
+    // 4️⃣ Return result
+    return res.json({ totalYearlyIncome: total });
+  } 
+  catch (err) {
+    console.error("Error computing yearly total income:", err);
+    return res.status(500).json({ message: "Server error" });
   }
-    
-  })
- 
+});
+
+  // routes/income.js
+// routes/income.js
+// routes/income.js
+
+// routes/income.js
+
+router.get("/dailytotalincome", async (req, res) => {
+  try {
+    // 1️⃣ Compute IST “now”
+    const now       = new Date();
+    const utcMillis = now.getTime() + now.getTimezoneOffset() * 60000;
+    const istOffset = 5.5 * 60 * 60000;
+    const istDate   = new Date(utcMillis + istOffset);
+
+    // 2️⃣ Use query params or fallback to IST date
+    const year  = parseInt(req.query.year,  10) || istDate.getFullYear();
+    const month = parseInt(req.query.month, 10) || (istDate.getMonth() + 1);
+    const day   = parseInt(req.query.day,   10) || istDate.getDate();
+
+    // 3️⃣ Call your existing helper
+    const total = await calculateDailyTotalIncome(day, month, year);
+
+    // 4️⃣ Respond
+    return res.json({
+     // date: `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`,
+      totalDailyIncome: total
+    });
+  } 
+  catch (err) {
+    console.error("Error computing today's total income:", err);
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+
 
 module.exports= router;
