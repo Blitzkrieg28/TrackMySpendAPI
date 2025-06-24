@@ -56,55 +56,55 @@ router.get("/viewincome" ,async function(req,res){
  *       200:
  *         description: Income added or updated
  */
+router.post("/addincome", validationMiddleware, async function (req, res) {
+  let { amount, category, date, count, time, from } = req.body;
 
-router.post("/addincome" ,validationMiddleware,async function(req,res){
-    let {amount,category,date,count,time,from} =req.body;
-    const existingIncome= await Income.findOne({
-        amount:amount,
-        category:category,
-        date:date,
-         time:time,
-         from:from
-    });
-    if(existingIncome){
-        await Income.updateOne(
-            {
-              amount: amount,
-              category: category,
-              date: date,
-              time: time,
-              from: from
-            },
-            {
-              $inc: { count: count }, // Increment the count by the provided value
-            }
-          );
-      
-          return res.send({
-            message: "Income updated successfully!",
-            middlewareMessage: req.authMessage,
-          });
-       
+  const existingIncome = await Income.findOne({
+    amount: amount,
+    category: category,
+    date: date,
+    time: time,
+    from: from
+  });
 
-      }
-
-      await Income.create({
-        amount:amount,
-        category:category,
-        date:date,
-        count: count,
+  if (existingIncome) {
+    await Income.updateOne(
+      {
+        amount: amount,
+        category: category,
+        date: date,
         time: time,
         from: from
-    })
-    
-      
-    res.send({
-        message: "income added successfully!!!",
-        middlewareMessage: req.authMessage,
+      },
+      {
+        $inc: { count: count }, // Increment the count by the provided value
+      }
+    );
 
-    })
-    
-})
+    return res.send({
+      message: "Income updated successfully!",
+      middlewareMessage: req.authMessage,
+      income: existingIncome  // you can optionally send existingIncome here if you want
+    });
+  }
+
+  // Create new income and save it to a variable
+  const newIncome = await Income.create({
+    amount: amount,
+    category: category,
+    date: date,
+    count: count,
+    time: time,
+    from: from
+  });
+
+  // Send back the new income document including _id
+  res.send({
+    message: "Income added successfully!!!",
+    middlewareMessage: req.authMessage,
+    income: newIncome  // this contains _id and other fields
+  });
+});
 
  router.put("/updateincome",validationMiddleware,async function(req,res){
     const {id,amount,category,date,count,time,from} =req.body;

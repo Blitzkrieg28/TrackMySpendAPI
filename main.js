@@ -3,6 +3,7 @@ const cors = require('cors');
 
 const dotenv = require('dotenv');
 const connectToDatabase = require('./database/database'); // ✅ Import DB connection
+const webpush = require('./config/webPushConfig');
 
 const userRouter = require('./routes/userroutes');
 const adminRouter = require('./routes/adminroutes');
@@ -11,7 +12,8 @@ const incomeRouter = require('./routes/incomeroutes');
 const categoryRouter = require('./routes/categoryroutes');
 const budgetRouter = require('./routes/budgetroutes');
 const reportRouter = require('./routes/reportroutes');
-
+const reminderRouter= require('./routes/reminderroutes');
+const subscriptionRouter= require('./routes/subscriptionroutes');
 dotenv.config();
 
 const app = express();
@@ -34,9 +36,12 @@ app.use('/report', reportRouter);
 app.get('/', (req, res) => {
   res.send('TrackMySpend API is running');
 });
+app.use('/reminder' ,reminderRouter);
+app.use('/subscription' ,subscriptionRouter);
 
 const swaggerDocs = require('./swagger');
 swaggerDocs(app);
+require('./jobs/pushReminders'); // ⏰ This starts the cron job
 
 // Start the server
 app.listen(PORT, () => {

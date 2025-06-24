@@ -35,99 +35,56 @@ const mongoose= require('../database/database');
  *       403:
  *         description: Invalid credentials
  */
+// routes/auth.js
 
-router.post("/signin" ,authmiddleware,async function(req,res){
-    console.log("now,checking if user exists??");
-    const username= req.body.username;
-    const password= req.body.password;
-    const userExists = await User.findOne({
-        username: username,
-        password: password
-        })
+// SIGN IN
+router.post('/signin', authmiddleware, async (req, res) => {
+  const { username, password } = req.body;
+  const user = await User.findOne({ username, password });
+  if (!user) {
+    return res.status(403).json({ message: 'Invalid credentials' });
+  }
 
-    if(userExists){
-        const token= jwt.sign({
-            username: userExists.username
-        },JWT_SECRET);
-        res.send({
-            middlewareMessage: req.authMessage,
-            token,
-            message: "you got a token for your sign-in!!!"
-        })
-        console.log("user exists!!!");
-        
-    }
-    else{
-        res.status(403).send({
-            message: "user not found!!"
-        })
-        console.log("user not found");
-    }
-    
+  // 1️⃣ Sign with the user ID (not just username)
+  const token = jwt.sign(
+    { id: user._id, username: user.username },
+    JWT_SECRET,
+    { expiresIn: '1h' }
+  );
 
+  // 2️⃣ Return it in the response
+  res.json({
+    middlewareMessage: req.authMessage,
+    token,
+    message: 'Sign-in successful'
+  });
+});
 
-})
-/**
- * @swagger
- * /user/signup:
- *   post:
- *     summary: Register a new user
- *     tags: [User]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - username
- *               - password
- *             properties:
- *               username:
- *                 type: string
- *                 example: john_doe
- *               password:
- *                 type: string
- *                 example: secret123
- *     responses:
- *       200:
- *         description: Sign-up successful
- *       404:
- *         description: User already exists
- */
+// SIGN UP
+router.post('/signup', authmiddleware, async (req, res) => {
+  const { username, password } = req.body;
 
-router.post("/signup",authmiddleware, async function(req,res){
-    const username= req.body.username;
-    const password= req.body.password;
-    
-    const userExists = await User.findOne({
-        username: username,
-        })
+  if (await User.findOne({ username })) {
+    return res.status(409).json({ message: 'Username already taken' });
+  }
 
-    if (userExists) {
-        return res.status(404).send({
-            message: "user with the same username/password exists, try with another one!!"
-        });
-    }
+  const newUser = await User.create({ username, password });
 
-   const newUser= await User.create({
-    username: username,
-    password: password
-   })
+  // sign a token with their new user ID
+  const token = jwt.sign(
+    { id: newUser._id, username: newUser.username },
+    JWT_SECRET,
+    { expiresIn: '1h' }
+  );
 
-    const token = jwt.sign({
-        username
-    }, JWT_SECRET);
+  res.status(201).json({
+    middlewareMessage: req.authMessage,
+    message: 'Sign-up successful',
+    token
+  });
+});
 
-    res.send({
-        middlewareMessage: req.authMessage,
-        message: "sign-up successfully!!",
-        token
-    });
-    console.log("sign-up successfully!!");
-
-   
-})
+module.exports = router;
 
 router.get("/aboutme" ,tokenVerificationMiddleware, function(req,res){
     res.send({
