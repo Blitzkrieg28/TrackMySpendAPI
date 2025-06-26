@@ -7,6 +7,10 @@ const tokenVerificationMiddleware= require('../middlewares/tokenauth');
 const User= require('../database/users');
 const Expense= require('../database/expenses');
 const validationMiddleware= require('../middlewares/validauth');
+const calculateTotalExpense = require('../utils/totalexpense');
+const calculateMonthlyTotalExpense = require('../utils/totalmonthlyexpense');
+const calculateYearlyTotalExpense = require('../utils/totalyearlyexpense');
+const calculateDailyTotalExpense = require('../utils/totaldailyexpense');
 global.totalExpense= 0;
 global.totalmonthlyExpense= 0;
 global.expenseMonth= 0;
@@ -160,121 +164,99 @@ router.post("/addexpense" ,validationMiddleware,async function(req,res){
  })
 
   router.get("/totalexpense" , async function(req,res){
-    //method:1--> Expense.find() is used which fetches whole expense docs data in the server
-    const expenses= await Expense.find();
+   try {
+    // Pass along any of year, month, day, category that the client provided
+    const filters = {
+      year:     req.query.year,
+      month:    req.query.month,
+      day:      req.query.day,
+      category: req.query.category,
+    };
 
-    expenses.forEach(function(expense){
-      totalExpense= totalExpense+((expense.amount)*(expense.count))
-    })
+    const totalExpense = await calculateTotalExpense(filters);
 
-    res.send({
-      totalExpense
-    })
-    //method:2-->
-    // const result= await Expense.aggregate([     //aggregate is a pipleine that helps to perform operation in the database itself
-    //     {
-    //         $group:{   //a pipeline stage which groups the document in the collection Expense based on _id
-    //             _id: null, //all documenta are grouped in 1 group no subdivisions into subgroups
-    //             totalExpense:{$sum:{$multiply:["$count","$amount"] }},  //operations 
-    //         },
-    //     },
-    // ]);
-    // const totalExpense= result[0].totalExpense; //aggregate always return ans in an array
-
-
-    console.log(totalExpense);
-   
+    console.log("Computed totalIncome with filters", filters, "→", totalExpense);
+    return res.json({ totalExpense });
+  } catch (err) {
+    console.error("Error computing total income:", err);
+    return res.status(500).json({ message: "Server error" });
+  }
 
   })
 
   router.get("/monthlytotalexpense" ,async function(req,res){
-  
-    const {month,year}= req.query; 
-    const parsedmonth= parseInt(month);
-    const parsedyear= parseInt(year);
+   try {
+    // 1️⃣ Compute “today” in IST
+    const now       = new Date();
+    const utcMillis = now.getTime() + now.getTimezoneOffset() * 60000;
+    const istOffset = 5.5 * 60 * 60000;
+    const istDate   = new Date(utcMillis + istOffset);
 
-    const expenses= await Expense.find();// fetching all data from database
+    // 2️⃣ Use query params if available; else use IST date
+    const month = parseInt(req.query.month, 10) || (istDate.getMonth() + 1); // 1–12
+    const year  = parseInt(req.query.year,  10) || istDate.getFullYear();
 
-    expenses.forEach(function(expense){
-        const expenseDate = new Date(expense.date);
+    // 3️⃣ Call util to calculate total
+    const total = await calculateMonthlyTotalExpense(month, year);
 
-        if (
-          expenseDate.getMonth() + 1 === parsedmonth && // Match month (0-based index)
-          expenseDate.getFullYear() === parsedyear // Match year
-        ) {
-        expenseMonth=expenseDate.getMonth() + 1;
-        expenseYear=expenseDate.getFullYear();
-          totalmonthlyExpense += (expense.amount*expense.count);
-        }
-    })
-    
-
-    res.send({
-        totalmonthlyExpense
-    })
-     console.log(expenseMonth);
-     console.log(expenseYear);
+    // 4️⃣ Return response
+    return res.json({ totalmonthlyExpense: total });
+  } 
+  catch (err) {
+    console.error("Error computing monthly total income:", err);
+    return res.status(500).json({ message: "Server error" });
+  }
   })
 
   router.get("/yearlytotalexpense" ,async function(req,res){
-    const {year}= req.query; 
-    
-    const parsedyear= parseInt(year);
+     try {
+    // 1️⃣ Compute “today” in IST
+    const now       = new Date();
+    const utcMillis = now.getTime() + now.getTimezoneOffset() * 60000;
+    const istOffset = 5.5 * 60 * 60000;
+    const istDate   = new Date(utcMillis + istOffset);
 
-    const expenses= await Expense.find();// fetching all data from database
+    // 2️⃣ Use query param if available; else fallback to IST year
+    const year = parseInt(req.query.year, 10) || istDate.getFullYear();
 
-    expenses.forEach(function(expense){
-        const expenseDate = new Date(expense.date);
+    // 3️⃣ Call util to compute total
+    const total = await calculateYearlyTotalExpense(year);
 
-        if (
-      
-          expenseDate.getFullYear() === parsedyear // Match year
-        ) {
-        
-        expenseYear=expenseDate.getFullYear();
-          totalyearlyExpense += (expense.amount*expense.count);
-        }
-    })
-    
-
-    res.send({
-        totalyearlyExpense
-    })
-    
-     console.log(expenseYear); 
+    // 4️⃣ Return result
+    return res.json({ totalYearlyExpense: total });
+  } 
+  catch (err) {
+    console.error("Error computing yearly total income:", err);
+    return res.status(500).json({ message: "Server error" });
+  }
   })
 
   router.get("/dailytotalexpense" ,async function(req,res){
-  
-    const {day,month,year}= req.query;
-    const parsedday= parseInt(day); 
-    const parsedmonth= parseInt(month);
-    const parsedyear= parseInt(year);
+   try {
+    // 1️⃣ Compute IST “now”
+    const now       = new Date();
+    const utcMillis = now.getTime() + now.getTimezoneOffset() * 60000;
+    const istOffset = 5.5 * 60 * 60000;
+    const istDate   = new Date(utcMillis + istOffset);
 
-    const expenses= await Expense.find();// fetching all data from database
+    // 2️⃣ Use query params or fallback to IST date
+    const year  = parseInt(req.query.year,  10) || istDate.getFullYear();
+    const month = parseInt(req.query.month, 10) || (istDate.getMonth() + 1);
+    const day   = parseInt(req.query.day,   10) || istDate.getDate();
 
-    expenses.forEach(function(expense){
-        const expenseDate = new Date(expense.date);
+    // 3️⃣ Call your existing helper
+    const total = await calculateDailyTotalExpense(day, month, year);
 
-        if (
-            expenseDate.getDate()===parsedday&&
-          expenseDate.getMonth() + 1 === parsedmonth && // Match month (0-based index)
-          expenseDate.getFullYear() === parsedyear // Match year
-        ) {
-         expenseDay=expenseDate.getDate();
-        expenseMonth=expenseDate.getMonth() + 1;
-        expenseYear=expenseDate.getFullYear();
-          totaldailyExpense += (expense.amount*expense.count);
-        }
-    })
-    
-
-    res.send({
-        totaldailyExpense
-    })
-     console.log(expenseDay);
-     console.log(expenseMonth);
-     console.log(expenseYear);
+    // 4️⃣ Respond
+    return res.json({
+     // date: `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`,
+      totalDailyExpense: total
+    });
+  } 
+  catch (err) {
+    console.error("Error computing today's total income:", err);
+    return res.status(500).json({ message: "Server error" });
+  }
   })
  
 
