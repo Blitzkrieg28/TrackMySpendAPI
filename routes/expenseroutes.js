@@ -258,6 +258,138 @@ router.post("/addexpense" ,validationMiddleware,async function(req,res){
     return res.status(500).json({ message: "Server error" });
   }
   })
- 
+   
+  router.get('/eachmonthexpense', async (req, res) => {
+  try {
+    // 🕒 Get IST date
+    const now       = new Date();
+    const utcMillis = now.getTime() + now.getTimezoneOffset() * 60000;
+    const istOffset = 5.5 * 60 * 60000;
+    const istDate   = new Date(utcMillis + istOffset);
+
+    // 📅 Determine target year
+    const year = parseInt(req.query.year, 10) || istDate.getFullYear();
+
+    // 📦 Fetch all income records
+    const expenses = await Expense.find();
+
+    // 📊 Initialize monthly totals (Jan–Dec)
+    const monthlyTotals = Array(12).fill(0);
+
+    // 🧮 Sum incomes by month (accounting for count)
+    for (const expense of expenses) {
+      const dateObj = new Date(expense.date);
+      if (dateObj.getFullYear() === year) {
+        const monthIndex = dateObj.getMonth(); // 0-based index
+        const expenseTotal = (expense.amount || 0) * (expense.count || 1);
+        monthlyTotals[monthIndex] += expenseTotal;
+      }
+    }
+
+    // 🏷 Month labels
+    const months = [
+      'Jan','Feb','Mar','Apr','May','Jun',
+      'Jul','Aug','Sep','Oct','Nov','Dec'
+    ];
+
+    return res.json({ months, totals: monthlyTotals });
+  }
+  catch (err) {
+    console.error('Error in eachmonthincome:', err);
+    return res.status(500).json({ error: 'Server error' });
+  }
+});
+router.get('/eachweekexpense', async (req, res) => {
+  try {
+    // 1️⃣ Get current IST date
+    const now       = new Date();
+    const utcMillis = now.getTime() + now.getTimezoneOffset() * 60000;
+    const istOffset = 5.5 * 60 * 60000;
+    const istDate   = new Date(utcMillis + istOffset);
+
+    // 2️⃣ Parse year/month from query or default to IST values
+    const year  = parseInt(req.query.year, 10) || istDate.getFullYear();
+    const month = parseInt(req.query.month, 10) || (istDate.getMonth() + 1);
+
+    // 3️⃣ Fetch all incomes
+    const expenses = await Expense.find();
+
+    // 4️⃣ Initialize weekly totals [W1–W5]
+    const weeklyTotals = [0, 0, 0, 0, 0];
+
+    // 5️⃣ Calculate totals by week
+    for (const income of expenses) {
+      const dateObj = new Date(income.date);
+      const incomeYear  = dateObj.getFullYear();
+      const incomeMonth = dateObj.getMonth() + 1;
+
+      if (incomeYear === year && incomeMonth === month) {
+        const dayOfMonth = dateObj.getDate();
+        const weekInMonth = Math.ceil(dayOfMonth / 7); // Week 1 to 5
+        const amount = (income.amount || 0) * (income.count || 1);
+
+        if (weekInMonth >= 1 && weekInMonth <= 5) {
+          weeklyTotals[weekInMonth - 1] += amount;
+        }
+      }
+    }
+
+    // 6️⃣ Week labels
+    const weeks = ['W1', 'W2', 'W3', 'W4', 'W5'];
+
+    return res.json({ weeks, totals: weeklyTotals });
+  }
+  catch (err) {
+    console.error('Error in eachweekincome:', err);
+    return res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.get('/eachdayexpense', async (req, res) => {
+  try {
+    // 🕒 Compute IST date
+    const now       = new Date();
+    const utcMillis = now.getTime() + now.getTimezoneOffset() * 60000;
+    const istOffset = 5.5 * 60 * 60000;
+    const istDate   = new Date(utcMillis + istOffset);
+
+    const year  = parseInt(req.query.year,  10) || istDate.getFullYear();
+    const month = parseInt(req.query.month, 10) || (istDate.getMonth() + 1);
+    const week  = parseInt(req.query.week,  10)
+               || Math.ceil(istDate.getDate() / 7);
+
+    // Step 1️⃣: Get all incomes for that year/month
+    const incomes = await Expense.find({});
+
+    // Step 2️⃣: Filter and compute income totals per day in the week
+    const weeklyTotals = Array(7).fill(0); // Mon–Sun
+
+    for (const income of incomes) {
+      const dateObj = new Date(income.date);
+      if (
+        dateObj.getFullYear() === year &&
+        (dateObj.getMonth() + 1) === month &&
+        Math.ceil(dateObj.getDate() / 7) === week
+      ) {
+        const isoWeekday = dateObj.getDay(); // 0 (Sun) to 6 (Sat)
+
+        // Convert to 1 (Mon) to 7 (Sun) format
+        const adjustedDay = isoWeekday === 0 ? 7 : isoWeekday;
+
+        // Call your utility to compute `amount × count`
+        const incomeTotal = (income.amount || 0) * (income.count || 1);
+        weeklyTotals[adjustedDay - 1] += incomeTotal;
+      }
+    }
+
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    return res.json({ days, totals: weeklyTotals });
+  }
+  catch (err) {
+    console.error('Error in /eachdayincome:', err);
+    return res.status(500).json({ error: 'Server error' });
+  }
+});
+
 
 module.exports= router;

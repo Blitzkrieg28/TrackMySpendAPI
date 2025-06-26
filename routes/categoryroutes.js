@@ -134,6 +134,23 @@ router.get("/filter", async (req, res) => {
   res.send({ filtered });
 });
 
+router.get("/expensefilter", async (req, res) => {
+  const { month, year, day } = req.query;
+
+  const expenses = await Expense.find();
+  const filtered = expenses.filter((inc) => {
+    const [incYear, incMonth, incDay] = inc.date.split("-"); // assumes YYYY-MM-DD
+
+    return (
+      (!month || incMonth === month) &&
+      (!year || incYear === year) &&
+      (!day || incDay === day)
+    );
+  });
+
+  res.send({ filtered });
+});
+
 router.get("/viewexpensecategory" , async function(req,res){
   
 
