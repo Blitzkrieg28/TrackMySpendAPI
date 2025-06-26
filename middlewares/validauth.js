@@ -9,10 +9,11 @@ const schemaTime = zod.string() .nonempty("Time is required").refine(
     (val) => /^([01]\d|2[0-3]):([0-5]\d)$/.test(val),
     "Invalid time format (expected HH:mm)"
   );
+const schemaTo= zod.string().nonempty();
 
 
 const validationMiddleware = (req, res, next) => {
-    const { id, amount, category, date,time,from } = req.body;
+    const { id, amount, category, date,time,from,to } = req.body;
 
     const errors = [];
 
@@ -43,6 +44,10 @@ const validationMiddleware = (req, res, next) => {
 
     if (from !== undefined) {
         const result = schemaFrom.safeParse(from);
+        if (!result.success) errors.push(result.error.errors[0].message);
+    }
+     if (to !== undefined) {
+        const result = schemaTo.safeParse(to);
         if (!result.success) errors.push(result.error.errors[0].message);
     }
 

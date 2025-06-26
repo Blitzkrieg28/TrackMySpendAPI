@@ -4,7 +4,9 @@ const expenseSchema= new mongoose.Schema({
     amount: Number,
     category: String,
     date: String,
-    count: Number
+    count: Number,
+    to: String,
+    time: String
 })
 
 const Expense= mongoose.model('expense' ,expenseSchema);

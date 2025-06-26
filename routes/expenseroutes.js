@@ -16,7 +16,7 @@ global.totaldailyExpense= 0;
 global.expenseDay =0;
 //router.use(tokenVerificationMiddleware);
 
-router.get("/viewexpense" ,validationMiddleware,async function(req,res){
+router.get("/viewexpense" ,async function(req,res){
     const expenselist= await Expense.find();
     res.send({
         message: "here view your expense list",
@@ -53,11 +53,13 @@ router.get("/viewexpense" ,validationMiddleware,async function(req,res){
  */
 
 router.post("/addexpense" ,validationMiddleware,async function(req,res){
-    let {amount,category,date,count} =req.body;
+    let {amount,category,date,count,to,time} =req.body;
     const existingExpense= await Expense.findOne({
         amount:amount,
         category:category,
-        date:date
+        date:date,
+        time:time,
+        to:to
     });
     if(existingExpense){
         await Expense.updateOne(
@@ -65,43 +67,49 @@ router.post("/addexpense" ,validationMiddleware,async function(req,res){
               amount: amount,
               category: category,
               date: date,
+              time: time,
+              to: to
             },
             {
               $inc: { count: count }, // Increment the count by the provided value
             }
           );
-      
-          return res.send({
-            message: "Expense updated successfully!",
-            middlewareMessage: req.authMessage,
-          });
-       
+       return res.send({
+      message: "Income updated successfully!",
+      middlewareMessage: req.authMessage,
+      expense: existingExpense  // you can optionally send existingIncome here if you want
+    });
 
       }
 
-      await Expense.create({
+      const newexpense= await Expense.create({
         amount:amount,
         category:category,
         date:date,
-        count: count
+        count: count,
+        to: to,
+        time: time
     })
     
       
     res.send({
         message: "expense added successfully!!!",
         middlewareMessage: req.authMessage,
+        expense: newexpense
 
     })
     
 })
 
  router.put("/updatexpense",validationMiddleware,async function(req,res){
-    const {id,amount,category,date,count} =req.body;
+    const {id,amount,category,date,count,time,to} =req.body;
     const updateFields = {};
   if (amount !== undefined) updateFields.amount = amount;
   if (category !== undefined) updateFields.category = category;
   if (date !== undefined) updateFields.date = date;
   if (count !== undefined) updateFields.count = count;
+  if (to !== undefined) updateFields.to = to;
+  if (time !== undefined) updateFields.time = time;
 
     const existingId=await Expense.findById(id);
     if(!existingId){
@@ -125,7 +133,7 @@ router.post("/addexpense" ,validationMiddleware,async function(req,res){
  })
 
  router.delete("/deletexpense",validationMiddleware,async function(req,res){
-    const {id,amount,category,date} =req.body;
+    const {id} =req.body;
     const existingId=await Expense.findById(id);
     if(!existingId){
         return res.status(404).send({

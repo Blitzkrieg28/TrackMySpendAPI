@@ -12,13 +12,7 @@ const calculateTotalIncome = require('../utils/totalincome');
 const calculateMonthlyTotalIncome = require('../utils/totalmonthlyincome');
 const calculateYearlyTotalIncome = require('../utils/totalyearlyincome');
 const calculateDailyTotalIncome = require('../utils/totaldailyincome');
-global.totalIncome= 0;
-global.totalmonthlyIncome =0;
-global.incomeMonth= 0;
-global.incomeYear= 0;
-global.totalyearlyIncome= 0;
-global.totaldailyIncome= 0;
-global.incomeDay =0;
+
 //router.use(tokenVerificationMiddleware);
 
 router.get("/viewincome" ,async function(req,res){
