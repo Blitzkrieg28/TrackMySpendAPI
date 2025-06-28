@@ -221,7 +221,67 @@ router.get("/totalincomecategory" ,async function(req,res){
     })
 
     console.log(totalincomecategory);
-})
+});
+// routes/expense.js
+
+/**
+ * GET /expense/by-category
+ * Query params:
+ *   - day (1–31)
+ *   - month (1–12)
+ *   - year (e.g. 2025)
+ *
+ * Returns JSON:
+ * {
+ *   categories: [ "Food", "Transport", ... ],
+ *   totals:     [ 1250,      430,         ... ]
+ * }
+ */
+// routes/expense.js
+
+/**
+ * GET /expense/by-category
+ * Query params (all optional):
+ *   - year  (e.g. "2025")
+ *   - month (e.g. "06")
+ *   - day   (e.g. "18")
+ *
+ * Returns:
+ * { categories: [...], totals: [...] }
+ */
+router.get('/by-category', async (req, res) => {
+  try {
+    const { year, month, day } = req.query;
+
+    // 1. Fetch everything (or you could pre-filter in Mongo if you prefer)
+    const allExpenses = await Expense.find();
+
+    // 2. JS-filter by date string
+    const filtered = allExpenses.filter(exp => {
+      const [eYear, eMonth, eDay] = exp.date.split('-'); // "YYYY-MM-DD"
+      return (
+        (!year  || eYear  === year)  &&
+        (!month || eMonth === month) &&
+        (!day   || eDay   === day)
+      );
+    });
+
+    // 3. Group by category
+    const categorySums = filtered.reduce((acc, exp) => {
+      acc[exp.category] = (acc[exp.category] || 0) + exp.amount;
+      return acc;
+    }, {});
+
+    // 4. Build parallel arrays
+    const categories = Object.keys(categorySums);
+    const totals     = categories.map(cat => categorySums[cat]);
+
+    res.json({ categories, totals });
+  } catch (err) {
+    console.error('Error in /expense/by-category:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 
 
