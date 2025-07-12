@@ -14,6 +14,7 @@ const budgetRouter = require('./routes/budgetroutes');
 const reportRouter = require('./routes/reportroutes');
 const reminderRouter= require('./routes/reminderroutes');
 const subscriptionRouter= require('./routes/subscriptionroutes');
+const ocrRouter= require('./routes/ocrroutes');
 dotenv.config();
 
 const app = express();
@@ -38,6 +39,8 @@ app.get('/', (req, res) => {
 });
 app.use('/reminder' ,reminderRouter);
 app.use('/subscription' ,subscriptionRouter);
+app.use(express.json({ limit: "10mb" }));
+app.use('/ocr' ,ocrRouter);
 
 const swaggerDocs = require('./swagger');
 swaggerDocs(app);

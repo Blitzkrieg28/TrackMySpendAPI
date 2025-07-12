@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const axios = require('axios');
+const puppeteer = require('puppeteer');
 
 /**
  * @swagger
@@ -62,6 +63,46 @@ router.get("/viewreport", async function (req, res) {
             error: error.message
         });
     }
+});
+router.get('/pdf', async (req, res) => {
+  
+
+  // 1. Launch headless browser
+  const browser = await puppeteer.launch({
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox']
+  });
+
+  try {
+    const page = await browser.newPage();
+
+    // 2. Navigate to your front‑end report page,
+    //    passing year & month so it renders the right data.
+    const reportUrl = `http://localhost:5173/repanalysis`;
+await new Promise(resolve => setTimeout(resolve, 40000));
+
+    await page.goto(reportUrl, { waitUntil: 'networkidle0' });
+
+    // 3. Generate PDF
+    const pdfBuffer = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      margin: { top: '1in', bottom: '1in', left: '0.5in', right: '0.5in' }
+    });
+
+    // 4. Send it back
+    res.set({
+      'Content-Type':        'application/pdf',
+      'Content-Disposition': `attachment; filename=Report.pdf`,
+      'Content-Length':      pdfBuffer.length
+    });
+    res.send(pdfBuffer);
+  } catch (err) {
+    console.error('PDF generation error:', err);
+    res.status(500).send('Could not generate PDF');
+  } finally {
+    await browser.close();
+  }
 });
 
 module.exports = router;
