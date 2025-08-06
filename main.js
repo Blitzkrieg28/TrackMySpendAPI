@@ -26,7 +26,7 @@ connectToDatabase();
 
 // 1) CORS must be applied before any other middleware or routes
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: 'https://track-my-spend-frontend-ten.vercel.app/',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
@@ -35,7 +35,7 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 
 // 3) (Optional) Explicit preflight for OCR route
-app.options('/ocr/advanced-base64', cors({ origin: 'http://localhost:5173' }));
+app.options('/ocr/advanced-base64', cors({ origin: 'https://track-my-spend-frontend-ten.vercel.app/' }));
 
 // 4) Application routes
 app.use('/admin', adminRouter);
