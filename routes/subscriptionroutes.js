@@ -1,6 +1,10 @@
 const express = require("express");
 const Subscription = require("../database/subscription");
 const router = express.Router();
+const tokenVerificationMiddleware = require('../middlewares/tokenauth');
+
+// Apply authentication middleware to all routes
+router.use(tokenVerificationMiddleware);
 
 // Save push subscription
 router.post('/', async (req, res) => {

@@ -17,9 +17,13 @@ function tokenVerificationMiddleware(req, res, next) {
 
   try {
     const payload = jwt.verify(token, JWT_SECRET);
-    // Make sure payload contains the user’s ID under a known key:
+    // Make sure payload contains the user's ID under a known key:
     // e.g. when you signed the token you did jwt.sign({ id: user._id }, …)
-    req.user = { _id: payload.id };  
+    req.user = { 
+      _id: payload.id,
+      email: payload.email,
+      name: payload.name
+    };  
     return next();
   } catch (err) {
     return res.status(401).json({ message: 'Invalid or expired token!' });

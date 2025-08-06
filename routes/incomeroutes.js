@@ -1,7 +1,9 @@
 const express= require('express');
 const router= express.Router();
 const jwt= require('jsonwebtoken');
-const JWT_SECRET= 'secret';
+const dotenv= require('dotenv');
+dotenv.config();
+const JWT_SECRET= process.env.JWT_SECRET || 'secret';
 const authmiddleware= require('../middlewares/zodauth');
 const tokenVerificationMiddleware= require('../middlewares/tokenauth');
 const User= require('../database/users');
@@ -13,7 +15,8 @@ const calculateMonthlyTotalIncome = require('../utils/totalmonthlyincome');
 const calculateYearlyTotalIncome = require('../utils/totalyearlyincome');
 const calculateDailyTotalIncome = require('../utils/totaldailyincome');
 
-//router.use(tokenVerificationMiddleware);
+// Apply authentication middleware to all routes
+router.use(tokenVerificationMiddleware);
 
 router.get("/viewincome" ,async function(req,res){
     const incomelist= await Income.find();

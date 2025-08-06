@@ -1,7 +1,9 @@
 const express= require('express');
 const router= express.Router();
 const jwt= require('jsonwebtoken');
-const JWT_SECRET= 'secret';
+const dotenv= require('dotenv');
+dotenv.config();
+const JWT_SECRET= process.env.JWT_SECRET || 'secret';
 const authmiddleware= require('../middlewares/zodauth');
 const tokenVerificationMiddleware= require('../middlewares/tokenauth');
 const User= require('../database/users');
@@ -21,10 +23,10 @@ const mongoose= require('../database/database');
  *           schema:
  *             type: object
  *             required:
- *               - username
+ *               - email
  *               - password
  *             properties:
- *               username:
+ *               email:
  *                 type: string
  *               password:
  *                 type: string
@@ -37,16 +39,16 @@ const mongoose= require('../database/database');
 
 router.post("/signin" ,authmiddleware,async function(req,res){
     console.log("now,checking if admin exists??");
-    const username= req.body.username;
+    const email= req.body.email;
     const password= req.body.password;
     const existingAdmin= await Admin.findOne({
-        username: username,
+        email: email,
         password: password
  })
 
     if(existingAdmin){
         const token= jwt.sign({
-            username: existingAdmin.username
+            email: existingAdmin.email
         },JWT_SECRET);
         res.send({
             middlewareMessage: req.authMessage,
@@ -69,7 +71,7 @@ router.post("/signin" ,authmiddleware,async function(req,res){
 
 
 
-router.get("/userlist" , async function(req,res){
+router.get("/userlist" , tokenVerificationMiddleware, async function(req,res){
     const users=  await User.find();
     res.send({
       users

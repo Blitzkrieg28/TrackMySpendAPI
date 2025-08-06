@@ -2,6 +2,10 @@ const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 const puppeteer = require('puppeteer');
+const tokenVerificationMiddleware = require('../middlewares/tokenauth');
+
+// Apply authentication middleware to all routes
+router.use(tokenVerificationMiddleware);
 
 /**
  * @swagger

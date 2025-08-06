@@ -5,21 +5,25 @@ const Tesseract = require("tesseract.js");
 const multer = require("multer");
 const textractService = require("../utils/textractService");
 const mixtralService = require("../utils/mixtralService");
+const tokenVerificationMiddleware = require('../middlewares/tokenauth');
 
-// Configure multer for file uploads
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
-  },
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed'), false);
-    }
-  }
-});
+// Apply authentication middleware to all routes
+//router.use(tokenVerificationMiddleware);
+
+//Configure multer for file uploads
+ const upload = multer({
+   storage: multer.memoryStorage(),
+   limits: {
+     fileSize: 10 * 1024 * 1024, // 10MB limit
+   },
+   fileFilter: (req, file, cb) => {
+     if (file.mimetype.startsWith('image/')) {
+       cb(null, true);
+     } else {
+       cb(new Error('Only image files are allowed'), false);
+     }
+   }
+ });
 
 /**
  * @swagger
@@ -85,9 +89,9 @@ const upload = multer({
 router.post("/advanced", upload.single('image'), async (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ 
-        success: false, 
-        error: "No image file provided" 
+      return res.status(400).json({
+        success: false,
+        error: "No image file provided"
       });
     }
 
@@ -121,9 +125,27 @@ router.post("/advanced", upload.single('image'), async (req, res) => {
       parsedData.category = await mixtralService.categorizeExpense(description, amount);
     }
 
+    // Ensure we have consistent field names
+    const responseData = {
+      ...parsedData,
+      // Make sure we have both 'name' and 'merchant' fields
+      name: parsedData.name || parsedData.merchant || '',
+      merchant: parsedData.merchant || parsedData.name || '',
+      // Ensure isExpense is a boolean
+      isExpense: Boolean(parsedData.isExpense),
+      // Add any missing fields with defaults
+      amount: parsedData.amount || '0',
+      date: parsedData.date || '',
+      time: parsedData.time || '',
+      description: parsedData.description || '',
+      category: parsedData.category || 'Other'
+    };
+
+    console.log('Final response data:', responseData);
+
     return res.json({
       success: true,
-      data: parsedData,
+      data: responseData,
       rawText: extractedText,
       s3Key: textractResult.s3Key,
       processingTime: new Date().toISOString()
@@ -222,85 +244,85 @@ router.post("/advanced-base64", async (req, res) => {
 });
 
 // Legacy OCR endpoint (keeping for backward compatibility)
-router.post("/ocr", async (req, res) => {
-  try {
-    const { imageBase64 } = req.body;
-    if (!imageBase64) {
-      return res.status(400).json({ error: "Image is required" });
-    }
+// router.post("/ocr", async (req, res) => {
+//   try {
+//     const { imageBase64 } = req.body;
+//     if (!imageBase64) {
+//       return res.status(400).json({ error: "Image is required" });
+//     }
 
-    const buffer = Buffer.from(
-      imageBase64.replace(/^data:image\/\w+;base64,/, ""),
-      "base64"
-    );
+//     const buffer = Buffer.from(
+//       imageBase64.replace(/^data:image\/\w+;base64,/, ""),
+//       "base64"
+//     );
 
-    // 1. Get image metadata
-    const metadata = await sharp(buffer).metadata();
-    const height = metadata.height || 1200;
-    const width = metadata.width || 800;
+//     // 1. Get image metadata
+//     const metadata = await sharp(buffer).metadata();
+//     const height = metadata.height || 1200;
+//     const width = metadata.width || 800;
 
-    // 2. Process top 25% region to extract amount
-    const croppedTop = await sharp(buffer)
-      .extract({
-        left: 0,
-        top: 0,
-        width: width,
-        height: Math.floor(height * 0.25),
-      })
-      .grayscale()
-      .normalize()
-      .resize(1200)
-      .modulate({ brightness: 1.1, contrast: 2.2 }) // contrast boost
-      .sharpen()
-      .toBuffer();
+//     // 2. Process top 25% region to extract amount
+//     const croppedTop = await sharp(buffer)
+//       .extract({
+//         left: 0,
+//         top: 0,
+//         width: width,
+//         height: Math.floor(height * 0.25),
+//       })
+//       .grayscale()
+//       .normalize()
+//       .resize(1200)
+//       .modulate({ brightness: 1.1, contrast: 2.2 }) // contrast boost
+//       .sharpen()
+//       .toBuffer();
 
-    const {
-      data: { text: amountText }
-    } = await Tesseract.recognize(croppedTop, "eng", {
-      tessedit_pageseg_mode: Tesseract.PSM.SINGLE_LINE,
-    });
+//     const {
+//       data: { text: amountText }
+//     } = await Tesseract.recognize(croppedTop, "eng", {
+//       tessedit_pageseg_mode: Tesseract.PSM.SINGLE_LINE,
+//     });
 
-    const amountMatch = amountText.match(
-      /(?:₹|Rs\.?)?\s*(\d{1,3}(?:[,\s]?\d{3})*(?:[.,]\d{1,2})?)/i
-    );
-    const amount = amountMatch
-      ? amountMatch[1].replace(/[,\s]/g, "").replace(/,/, ".")
-      : null;
+//     const amountMatch = amountText.match(
+//       /(?:₹|Rs\.?)?\s*(\d{1,3}(?:[,\s]?\d{3})*(?:[.,]\d{1,2})?)/i
+//     );
+//     const amount = amountMatch
+//       ? amountMatch[1].replace(/[,\s]/g, "").replace(/,/, ".")
+//       : null;
 
-    // 3. Process full image for other fields
-    const processedFull = await sharp(buffer)
-      .grayscale()
-      .normalize()
-      .gamma()
-      .threshold(100)
-      .resize(1000)
-      .toBuffer();
+//     // 3. Process full image for other fields
+//     const processedFull = await sharp(buffer)
+//       .grayscale()
+//       .normalize()
+//       .gamma()
+//       .threshold(100)
+//       .resize(1000)
+//       .toBuffer();
 
-    const {
-      data: { text }
-    } = await Tesseract.recognize(processedFull, "eng", {
-      tessedit_pageseg_mode: Tesseract.PSM.AUTO,
-    });
+//     const {
+//       data: { text }
+//     } = await Tesseract.recognize(processedFull, "eng", {
+//       tessedit_pageseg_mode: Tesseract.PSM.AUTO,
+//     });
 
-    // 4. Extract fields
-    const nameMatch = text.match(/Paid to\s+([^\n\r]+)/i);
-    const name = nameMatch ? nameMatch[1].trim() : null;
+//     // 4. Extract fields
+//     const nameMatch = text.match(/Paid to\s+([^\n\r]+)/i);
+//     const name = nameMatch ? nameMatch[1].trim() : null;
 
-    const upiMatch = text.match(/(?:PhonePe|UPI ID)[\s•\-:]*([A-Za-z0-9@.\-_]+)/i);
-    const upiId = upiMatch ? upiMatch[1] : null;
+//     const upiMatch = text.match(/(?:PhonePe|UPI ID)[\s•\-:]*([A-Za-z0-9@.\-_]+)/i);
+//     const upiId = upiMatch ? upiMatch[1] : null;
 
-    const dateMatch = text.match(
-      /\d{1,2}\s+\w+\s+\d{4},\s+\d{1,2}:\d{2}\s?(?:am|pm)?/i
-    );
-    const date = dateMatch ? dateMatch[0] : null;
+//     const dateMatch = text.match(
+//       /\d{1,2}\s+\w+\s+\d{4},\s+\d{1,2}:\d{2}\s?(?:am|pm)?/i
+//     );
+//     const date = dateMatch ? dateMatch[0] : null;
 
-    // 5. Return result
-    return res.json({ amount, name, date, upiId });
+//     // 5. Return result
+//     return res.json({ amount, name, date, upiId });
 
-  } catch (err) {
-    console.error("OCR error:", err);
-    return res.status(500).json({ error: "OCR failed", details: err.message });
-  }
-});
+//   } catch (err) {
+//     console.error("OCR error:", err);
+//     return res.status(500).json({ error: "OCR failed", details: err.message });
+//   }
+// });
 
 module.exports = router;

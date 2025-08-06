@@ -1,7 +1,9 @@
 const express= require('express');
 const router= express.Router();
 const jwt= require('jsonwebtoken');
-const JWT_SECRET= 'secret';
+const dotenv= require('dotenv');
+dotenv.config();
+const JWT_SECRET= process.env.JWT_SECRET || 'secret';
 const authmiddleware= require('../middlewares/zodauth');
 const tokenVerificationMiddleware= require('../middlewares/tokenauth');
 const USERS= require('../database/users');
@@ -27,8 +29,8 @@ global.incomeDay =0;
 global.expenseCategory= "";
 global.incomeCategory= "";
 
-
-//router.use(tokenVerificationMiddleware);
+// Apply authentication middleware to all routes
+router.use(tokenVerificationMiddleware);
 
 function budgetcalculator(income,expense){
     let budget= income*(0.3);

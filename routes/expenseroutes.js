@@ -1,7 +1,9 @@
 const express= require('express');
 const router= express.Router();
 const jwt= require('jsonwebtoken');
-const JWT_SECRET= 'secret';
+const dotenv= require('dotenv');
+dotenv.config();
+const JWT_SECRET= process.env.JWT_SECRET || 'secret';
 const authmiddleware= require('../middlewares/zodauth');
 const tokenVerificationMiddleware= require('../middlewares/tokenauth');
 const User= require('../database/users');
@@ -18,7 +20,9 @@ global.expenseYear= 0;
 global.totalyearlyExpense= 0;
 global.totaldailyExpense= 0;
 global.expenseDay =0;
-//router.use(tokenVerificationMiddleware);
+
+// Apply authentication middleware to all routes
+router.use(tokenVerificationMiddleware);
 
 router.get("/viewexpense" ,async function(req,res){
     const expenselist= await Expense.find();

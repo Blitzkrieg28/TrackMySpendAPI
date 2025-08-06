@@ -22,10 +22,10 @@ const mongoose= require('../database/database');
  *           schema:
  *             type: object
  *             required:
- *               - username
+ *               - email
  *               - password
  *             properties:
- *               username:
+ *               email:
  *                 type: string
  *               password:
  *                 type: string
@@ -39,15 +39,15 @@ const mongoose= require('../database/database');
 
 // SIGN IN
 router.post('/signin', authmiddleware, async (req, res) => {
-  const { username, password } = req.body;
-  const user = await User.findOne({ username, password });
+  const { email, password } = req.body;
+  const user = await User.findOne({ email, password });
   if (!user) {
     return res.status(403).json({ message: 'Invalid credentials' });
   }
 
-  // 1️⃣ Sign with the user ID (not just username)
+  // 1️⃣ Sign with the user ID (not just email)
   const token = jwt.sign(
-    { id: user._id, username: user.username },
+    { id: user._id, email: user.email, name: user.name },
     JWT_SECRET,
     { expiresIn: '1h' }
   );
@@ -62,17 +62,17 @@ router.post('/signin', authmiddleware, async (req, res) => {
 
 // SIGN UP
 router.post('/signup', authmiddleware, async (req, res) => {
-  const { username, password } = req.body;
+  const { name, email, password } = req.body;
 
-  if (await User.findOne({ username })) {
-    return res.status(409).json({ message: 'Username already taken' });
+  if (await User.findOne({ email })) {
+    return res.status(409).json({ message: 'Email already taken' });
   }
 
-  const newUser = await User.create({ username, password });
+  const newUser = await User.create({ name, email, password });
 
   // sign a token with their new user ID
   const token = jwt.sign(
-    { id: newUser._id, username: newUser.username },
+    { id: newUser._id, email: newUser.email, name: newUser.name },
     JWT_SECRET,
     { expiresIn: '1h' }
   );
@@ -88,7 +88,7 @@ module.exports = router;
 
 router.get("/aboutme" ,tokenVerificationMiddleware, function(req,res){
     res.send({
-        message: `Welcome, ${req.user.username}!`,
+        message: `Welcome, ${req.user.name}!`,
         data: req.user
     })
     console.log("i have entered in aboutme page");
