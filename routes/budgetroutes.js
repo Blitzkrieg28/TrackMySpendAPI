@@ -30,7 +30,7 @@ global.expenseCategory= "";
 global.incomeCategory= "";
 
 // Apply authentication middleware to all routes
-router.use(tokenVerificationMiddleware);
+//router.use(tokenVerificationMiddleware);
 
 function budgetcalculator(income,expense){
     let budget= income*(0.3);

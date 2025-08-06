@@ -16,7 +16,7 @@ const calculateYearlyTotalIncome = require('../utils/totalyearlyincome');
 const calculateDailyTotalIncome = require('../utils/totaldailyincome');
 
 // Apply authentication middleware to all routes
-router.use(tokenVerificationMiddleware);
+//router.use(tokenVerificationMiddleware);
 
 router.get("/viewincome" ,async function(req,res){
     const incomelist= await Income.find();

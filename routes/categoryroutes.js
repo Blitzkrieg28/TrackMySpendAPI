@@ -16,7 +16,7 @@ global.expenseCategory= "";
 global.incomeCategory= "";
 
 // Apply authentication middleware to all routes
-router.use(tokenVerificationMiddleware);
+//router.use(tokenVerificationMiddleware);
 /**
  * @swagger
  * /viewexpensecategory:

@@ -22,7 +22,7 @@ global.totaldailyExpense= 0;
 global.expenseDay =0;
 
 // Apply authentication middleware to all routes
-router.use(tokenVerificationMiddleware);
+//router.use(tokenVerificationMiddleware);
 
 router.get("/viewexpense" ,async function(req,res){
     const expenselist= await Expense.find();

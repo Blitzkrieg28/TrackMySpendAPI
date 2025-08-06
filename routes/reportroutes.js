@@ -5,7 +5,7 @@ const puppeteer = require('puppeteer');
 const tokenVerificationMiddleware = require('../middlewares/tokenauth');
 
 // Apply authentication middleware to all routes
-router.use(tokenVerificationMiddleware);
+//router.use(tokenVerificationMiddleware);
 
 /**
  * @swagger

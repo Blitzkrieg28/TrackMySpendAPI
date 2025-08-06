@@ -4,7 +4,7 @@ const router = express.Router();
 const tokenVerificationMiddleware = require('../middlewares/tokenauth');
 
 // Apply authentication middleware to all routes
-router.use(tokenVerificationMiddleware);
+//router.use(tokenVerificationMiddleware);
 
 // Create reminder
 router.post('/add', async (req, res) => {
